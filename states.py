@@ -6,7 +6,10 @@ class GetPaymentData(StatesGroup):
     get_payment = State()
 
 
-class PayProcess(StatesGroup):
+class GetDataForPay(StatesGroup):
     get_btc_amount = State()
     get_rub_amount = State()
     get_crypto_pocket = State()
+
+# class ProcessPay(StatesGroup):
+

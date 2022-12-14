@@ -1,3 +1,5 @@
+import time
+
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
@@ -8,7 +10,7 @@ from aiogram.utils import executor
 from pycoingecko import CoinGeckoAPI
 
 from db import Database
-from states import GetPaymentData, PayProcess
+from states import GetPaymentData, GetDataForPay
 
 cg = CoinGeckoAPI()
 db = Database("dbase")
@@ -157,7 +159,7 @@ async def process_enter_amount(call: types.CallbackQuery):
                                                                        callback_data="cancel_paymentprocess")]
                                              ]
                                          ))
-            await PayProcess.get_btc_amount.set()
+            await GetDataForPay.get_btc_amount.set()
         case "Рубль":
             await call.message.edit_text(f"""📈 Текущий курс 1 BTC = {price}
 Сколько вы хотите купить, введите корректную сумму? (Пример - 3500)""", reply_markup=InlineKeyboardMarkup(
@@ -165,10 +167,10 @@ async def process_enter_amount(call: types.CallbackQuery):
                     [InlineKeyboardButton(text="Отмена", callback_data="cancel_paymentprocess")]
                 ]
             ))
-            await PayProcess.get_rub_amount.set()
+            await GetDataForPay.get_rub_amount.set()
 
 
-@dp.message_handler(content_types=['text'], state=PayProcess.get_btc_amount)
+@dp.message_handler(content_types=['text'], state=GetDataForPay.get_btc_amount)
 async def get_btc_amount(msg: types.Message):
     user_id = msg.from_user.id
     try:
@@ -182,7 +184,7 @@ async def get_btc_amount(msg: types.Message):
                 [InlineKeyboardButton(text="Отмена", callback_data="cancel_paymentprocess")]
             ]
         ))
-        await PayProcess.get_crypto_pocket.set()
+        await GetDataForPay.get_crypto_pocket.set()
     except Exception as e:
         print(e)
         await bot.send_message(user_id, "Вы некорректно ввели данные", reply_markup=InlineKeyboardMarkup(
@@ -192,25 +194,61 @@ async def get_btc_amount(msg: types.Message):
         ))
 
 
-@dp.message_handler(content_types=['text'], state=PayProcess.get_crypto_pocket)
-async def get_crypto_pocket(msg: types.Message):
+@dp.message_handler(content_types=['text'], state=GetDataForPay.get_crypto_pocket)
+async def get_crypto_pocket(msg: types.Message, state: FSMContext):
     db.set_user_attr(msg.from_user.id, "pocket_address", msg.text)
 
     await bot.delete_message(msg.from_user.id, msg.message_id - 1)
-    await bot.send_message(msg.from_user.id, """⚠️ Внимание ⚠️ 
+    await bot.send_message(msg.from_user.id, f"""⚠️ Внимание ⚠️ 
 Проверьте правильно ли вы указали адрес и количество BTC
 
-📎  К получению ➖   Сумма указанная в рублях если человек писал в Рублях или же сумма в  BTC.
-📎  Проверьте адрес ➖   bc1qdqhhqtu5wvpf7rya84ee0drwyex74gcnfdfvtk(адресс котороый пользователь ввёл)
+📎  К получению ➖   {db.get_user_attr(msg.from_user.id, "amount")} BTC.
+📎  Проверьте адрес ➖   {db.get_user_attr(msg.from_user.id, "pocket_address")}
 🔴 ОЧЕНЬ ВАЖНО 🔴""", reply_markup=InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="Всё указано верно", callback_data="pay_process-data_correct")],
+            [InlineKeyboardButton(text="Всё указано верно", callback_data="payments_correct-btc")],
             [InlineKeyboardButton(text="Отмена операции", callback_data="cancel_paymentprocess")]
+        ]
+    ))
+    await state.finish()
+
+
+@dp.callback_query_handler(Text(startswith="payments_correct"))
+async def process_payments1(call: types.CallbackQuery):
+    currency = call.data.split('-')[1]
+    await call.message.edit_text(f"""⚠️  Ваша заявка действует ➡️ 30 ⬅️ минут  ⏰
+    
+📎  Карта Сбербанк RUB  ➖  **** **** **** ****
+📎  Сумма ➖    сохраненное значение суммы в рублях делится на курс биткоина  или  значение введенное в BTC умноженное на курс биткоина
+📎  К получению ➖  {db.get_user_attr(call.from_user.id, "amount")} {currency}.
+📎  Проверьте адрес ➖   {db.get_user_attr(call.from_user.id, "pocket_address")}
+🔴 ОЧЕНЬ ВАЖНО 🔴
+
+Вводите точную сумму  как выдал☝️ вам БОТ❗️
+Комментарий указывать  не нужно❗️
+▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️▪️
+🔆 Если вдруг у вас возникли трудности или вам что то не понятно, напишите Оператору или
+📍Тех.поддержка @SirSwapper 👨‍💻Оператор/Администратор @MisterSwapper""", reply_markup=InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Оплатил", callback_data=f"true_payed-{currency}")],
+            [InlineKeyboardButton(text="Отмена операции", callback_data="stop_pay_process")]
         ]
     ))
 
 
-@dp.callback_query_handler(Text("cancel_paymentprocess"), state=PayProcess.all_states)
+@dp.callback_query_handler(Text(startswith="true_payed"))
+async def process_payments2(call: types.CallbackQuery):
+    currency = call.data.split('-')[1]
+    match currency:
+        case "btc":
+            await bot.send_message(781873536, f"""Сумма обмена: вот отсюда(Сумма ➖    сохраненное значение суммы в рублях делится на курс биткоина  или  значение введенное в BTC умноженное на курс биткоина)
+Сумма к получению: {db.get_user_attr(call.from_user.id, "")} ( К получению ➖   введенное значение BTC).
+На кошелек: {db.get_user_attr(call.from_user.id, "pocket_address")}
+
+Время заявки: {time.time()}""")
+
+
+@dp.callback_query_handler(Text("cancel_paymentprocess"), state=GetDataForPay.all_states)
 async def stop_pay_process(call: types.CallbackQuery, state: FSMContext):
     await state.finish()
 

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="dbase" uuid="0411de21-31cd-4580-8df2-305617ca400a">
+    <data-source source="LOCAL" name="dbase" uuid="14656bea-60ed-4167-b1da-0ef67c86a559">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
-      <jdbc-url>jdbc:sqlite:D:\PycharmProjects\currencyexchangebot\dbase</jdbc-url>
+      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/dbase</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
       <libraries>
         <library>
