@@ -11,5 +11,9 @@ class GetDataForPay(StatesGroup):
     get_rub_amount = State()
     get_crypto_pocket = State()
 
+
+class SendReview(StatesGroup):
+    get_review = State()
+
 # class ProcessPay(StatesGroup):
 
