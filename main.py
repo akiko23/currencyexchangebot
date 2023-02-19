@@ -113,28 +113,22 @@ async def get_payment(msg: types.Message, state: FSMContext):
 
     await bot.send_message(user_id, "1", reply_markup=sd)
     await bot.delete_message(user_id, msg.message_id + 1)
-
-    if msg.text == "Сбербанк":
-        db.set_user_attr(user_id, "bank", "sberbank")
-        await bot.send_message(user_id, "Выберите как вам удобно ввести сумму:", reply_markup=InlineKeyboardMarkup(
+    
+    currency_keyb = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
                     InlineKeyboardButton(text="BTC", callback_data="enter_amount-btc"),
                     InlineKeyboardButton(text="Рубль", callback_data="enter_amount-rub")
                 ]
             ],
-        ))
+    )
+    if msg.text == "Сбербанк":
+        db.set_user_attr(user_id, "bank", "sberbank")
+        await bot.send_message(user_id, "Выберите как вам удобно ввести сумму:", reply_markup=currency_keyb)
         await state.finish()
     elif msg.text == "Тинькофф":
         db.set_user_attr(user_id, "bank", "tinkoff")
-        await bot.send_message(user_id, "Выберите как вам удобно ввести сумму:", reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(text="BTC", callback_data="enter_amount-btc"),
-                    InlineKeyboardButton(text="Рубль", callback_data="enter_amount-rub")
-                ]
-            ],
-        ))
+        await bot.send_message(user_id, "Выберите как вам удобно ввести сумму:", reply_markup=currency_keyb)
         await state.finish()
     elif msg.text == "Отмена":
         await state.finish()
@@ -193,8 +187,7 @@ async def get_btc_amount(msg: types.Message):
                                            [InlineKeyboardButton(text="Отмена", callback_data="cancel_paymentprocess")]
                                        ]
                                    ))
-    except Exception as e:
-        print(e)
+    except ValueError:
         await bot.send_message(user_id, "Вы некорректно ввели данные", reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[
                 [InlineKeyboardButton(text="Отмена", callback_data="cancel_paymentprocess")]
@@ -228,8 +221,7 @@ async def get_btc_amount(msg: types.Message):
                                            [InlineKeyboardButton(text="Отмена", callback_data="cancel_paymentprocess")]
                                        ]
                                    ))
-    except Exception as e:
-        print(e)
+    except ValueError:
         await bot.send_message(user_id, "Вы некорректно ввели данные", reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[
                 [InlineKeyboardButton(text="Отмена", callback_data="cancel_paymentprocess")]
