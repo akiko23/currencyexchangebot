@@ -10,7 +10,6 @@ async def check_requested_users():
         for user_id in requested_users:
             request_end_time = db.get_user_attr(user_id, "request_time")
             if int(time.time()) - request_end_time >= 0:
-                print(user_id)
                 db.set_user_attr(user_id, "request_time", 0)
                 await bot.send_message(user_id, """🚫Оплата не поступила🚫 
 
