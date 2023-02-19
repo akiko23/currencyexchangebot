@@ -61,7 +61,7 @@ async def get_message_text_commands(msg: types.Message):
         await bot.send_message(msg.from_user.id, "Пожалуйста, напишите ваш отзыв о боте")
         await SendReview.get_review.set()
 
-    elif msg.text in ["Назад", "Отмена", "В меню"]:
+    elif msg.text in ("Назад", "Отмена", "В меню"):
         await bot.send_message(user_id, text_on_start, reply_markup=keyb_on_start)
 
     else:
