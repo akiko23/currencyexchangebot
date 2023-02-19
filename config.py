@@ -3,12 +3,13 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 from pycoingecko import CoinGeckoAPI
 
+import os
 from db import Database
 
 cg = CoinGeckoAPI()
 db = Database("dbase")
 
-bot = Bot('5819253858:AAH_ZxMh6O2BXON3K0nWt7CIgXmyl_SkIoQ')
+bot = Bot(os.environ.get('BOT+TOKEN'))
 dp = Dispatcher(bot, storage=MemoryStorage())
 
 text_on_start = """Приветствуем вас, дорогие друзья!!!
